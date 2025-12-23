@@ -1,0 +1,8 @@
+{
+  "name": "Kisan Mitra",
+  "description": "AI-Powered Livestock Assistant for Farmers. Features health scanning, breed identification, and vaccine scheduling.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ]
+}
