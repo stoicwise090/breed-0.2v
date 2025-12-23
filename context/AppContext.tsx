@@ -30,27 +30,52 @@ const getInitialSettings = (): Settings => ({
 const AppContext = createContext<AppContextProps | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { user, isGuest } = useAuth();
+    const { user, token, isGuest } = useAuth();
     
-    // Settings are global/device specific for simplicity, but could be user specific too.
-    // Keeping settings local for now.
+    // Settings remain local for now for responsiveness, but could be synced
     const [settings, setSettings] = useLocalStorage<Settings>('kisan-settings', getInitialSettings());
     
-    // History Key depends on User ID
-    const historyKey = user ? `kisan-history-${user.id}` : 'kisan-history';
-    const [history, setHistory] = useLocalStorage<HistoryItem[]>(historyKey, []);
+    // History State
+    const [history, setHistory] = useState<HistoryItem[]>([]);
+    
+    // Guest History from LocalStorage
+    const [guestHistory, setGuestHistory] = useLocalStorage<HistoryItem[]>('kisan-guest-history', []);
 
     // Sync Prompt State
     const [showSyncPrompt, setShowSyncPrompt] = useState(false);
 
-    // Detect if we just logged in and have guest data
+    // Load History logic
+    useEffect(() => {
+        if (isGuest) {
+            // In Guest mode, use local storage
+            setHistory(guestHistory);
+        } else if (token) {
+            // In Authenticated mode, fetch from API
+            const fetchHistory = async () => {
+                try {
+                    const res = await fetch('/api/user/data', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        setHistory(data.history || []);
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch cloud history", e);
+                }
+            };
+            fetchHistory();
+        }
+    }, [isGuest, token, guestHistory]); // Depend on guestHistory so guest mode updates immediately
+
+    // Detect if we just logged in and have guest data to sync
     useEffect(() => {
         if (!isGuest && user) {
-            const guestDataStr = localStorage.getItem('kisan-history');
-            if (guestDataStr) {
+            const localData = localStorage.getItem('kisan-guest-history');
+            if (localData) {
                 try {
-                    const guestData = JSON.parse(guestDataStr);
-                    if (Array.isArray(guestData) && guestData.length > 0) {
+                    const parsed = JSON.parse(localData);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
                         setShowSyncPrompt(true);
                     }
                 } catch (e) {}
@@ -58,18 +83,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
     }, [user, isGuest]);
 
-    const handleSync = (shouldSync: boolean) => {
-        if (shouldSync) {
-            const guestDataStr = localStorage.getItem('kisan-history');
-            if (guestDataStr) {
-                const guestData = JSON.parse(guestDataStr);
-                // Merge logic: Put guest items at the top or bottom? Let's spread them.
-                // Avoid duplicates by ID if necessary, but for now simple merge.
-                setHistory(prev => [...guestData, ...prev]);
+    const handleSync = async (shouldSync: boolean) => {
+        if (shouldSync && token) {
+            const localData = localStorage.getItem('kisan-guest-history');
+            if (localData) {
+                const parsed = JSON.parse(localData);
+                try {
+                    // Send to backend
+                    await fetch('/api/user/sync', {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ items: parsed })
+                    });
+                    
+                    // Refresh from server
+                    const res = await fetch('/api/user/data', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        setHistory(data.history);
+                    }
+                } catch (e) {
+                    console.error("Sync failed", e);
+                }
             }
         }
-        // Always clear guest data after decision
-        localStorage.removeItem('kisan-history');
+        
+        // Always clear guest data after decision to avoid prompting again
+        localStorage.removeItem('kisan-guest-history');
+        setGuestHistory([]);
         setShowSyncPrompt(false);
     };
 
@@ -80,8 +126,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         } else {
             document.documentElement.classList.remove('dark');
         }
-        
-        // Also set the lang attribute on html tag for accessibility
         document.documentElement.lang = settings.language;
     }, [settings.theme, settings.language]);
 
@@ -93,20 +137,55 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setSettings(getInitialSettings());
     };
 
-    const addToHistory = (item: HistoryItem) => {
-        setHistory(prev => [item, ...prev]);
+    const addToHistory = async (item: HistoryItem) => {
+        if (isGuest) {
+            setGuestHistory(prev => [item, ...prev]);
+        } else if (token) {
+            // Optimistic Update
+            setHistory(prev => [item, ...prev]);
+            // Send to backend
+            try {
+                await fetch('/api/user/history', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ item })
+                });
+            } catch (e) {
+                console.error("Failed to save history to cloud", e);
+            }
+        }
     };
 
-    const clearHistory = () => {
+    const clearHistory = async () => {
         if (window.confirm('Are you sure you want to clear all history? This cannot be undone.')) {
-            setHistory([]);
+            if (isGuest) {
+                setGuestHistory([]);
+            } else if (token) {
+                setHistory([]);
+                try {
+                    await fetch('/api/user/history', {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                } catch (e) {
+                    console.error("Failed to clear cloud history", e);
+                }
+            }
         }
     };
 
     const importHistory = (data: HistoryItem[]) => {
-        // Basic validation
         if (Array.isArray(data) && data.length > 0 && data[0].id) {
-            setHistory(prev => [...data, ...prev]);
+            // For now, treat import as adding new items
+             if (isGuest) {
+                setGuestHistory(prev => [...data, ...prev]);
+            } else if (token) {
+                // Bulk sync
+                handleSync(true); // Logic could be reused if we passed data, but simple enough to just loop or use sync endpoint
+            }
             alert('History imported successfully!');
         } else {
             alert('Invalid data format.');

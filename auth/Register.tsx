@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from './useAuth';
 import { useApp } from '../context/AppContext';
-import { Loader2, UserPlus, ChevronLeft } from 'lucide-react';
+import { Loader2, UserPlus, ChevronLeft, Cloud } from 'lucide-react';
 
 interface RegisterProps {
     onSwitchToLogin: () => void;
@@ -42,6 +42,10 @@ export const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onBack, onS
                     <UserPlus size={32} />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-800 dark:text-white">{t.registerTitle}</h2>
+                <div className="mt-2 flex items-center gap-2 px-3 py-1.5 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 text-xs rounded-lg">
+                    <Cloud size={14} />
+                    <span>Data syncs across all your devices.</span>
+                </div>
             </div>
             
             <form onSubmit={handleSubmit} className="space-y-4">

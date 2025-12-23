@@ -2,11 +2,16 @@ import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI, Type } from "@google/genai";
 
 // Initialize environment
 const API_KEY = process.env.API_KEY;
+const JWT_SECRET = process.env.JWT_SECRET || 'kisan-secret-key-change-in-prod';
+const DB_FILE = path.join(process.cwd(), 'database.json');
 
 // Configure Google GenAI on Server
 const ai = new GoogleGenAI({ apiKey: API_KEY });
@@ -26,7 +31,159 @@ const upload = multer({
     limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
 
+// --- SIMPLE JSON DATABASE IMPLEMENTATION ---
+const initDb = () => {
+    if (!fs.existsSync(DB_FILE)) {
+        const initialData = { users: [], history: [] };
+        fs.writeFileSync(DB_FILE, JSON.stringify(initialData, null, 2));
+    }
+};
+
+const readDb = () => {
+    try {
+        const data = fs.readFileSync(DB_FILE, 'utf8');
+        return JSON.parse(data);
+    } catch (e) {
+        return { users: [], history: [] };
+    }
+};
+
+const writeDb = (data) => {
+    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+};
+
+initDb();
+
+// --- AUTH MIDDLEWARE ---
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+    if (!token) return res.sendStatus(401);
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) return res.sendStatus(403);
+        req.user = user;
+        next();
+    });
+};
+
 // --- API ROUTES ---
+
+// Auth: Register
+app.post('/api/auth/register', async (req, res) => {
+    try {
+        const { name, identifier, password, language } = req.body;
+        const db = readDb();
+
+        if (db.users.find(u => u.email === identifier || u.phone === identifier)) {
+            return res.status(400).json({ error: "User already exists" });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUser = {
+            id: Date.now().toString(),
+            name,
+            email: identifier.includes('@') ? identifier : undefined,
+            phone: !identifier.includes('@') ? identifier : undefined,
+            password: hashedPassword,
+            preferredLanguage: language,
+            settings: { theme: 'light', fontSize: 'normal' } // Default settings
+        };
+
+        db.users.push(newUser);
+        writeDb(db);
+
+        const token = jwt.sign({ id: newUser.id, name: newUser.name }, JWT_SECRET);
+        
+        // Don't send password back
+        const { password: _, ...userSafe } = newUser;
+        res.json({ token, user: userSafe });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: "Registration failed" });
+    }
+});
+
+// Auth: Login
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        const { identifier, password } = req.body;
+        const db = readDb();
+        const user = db.users.find(u => u.email === identifier || u.phone === identifier);
+
+        if (!user) return res.status(400).json({ error: "User not found" });
+
+        if (await bcrypt.compare(password, user.password)) {
+            const token = jwt.sign({ id: user.id, name: user.name }, JWT_SECRET);
+            const { password: _, ...userSafe } = user;
+            res.json({ token, user: userSafe });
+        } else {
+            res.status(401).json({ error: "Invalid credentials" });
+        }
+    } catch (e) {
+        res.status(500).json({ error: "Login failed" });
+    }
+});
+
+// User Data: Get All (History & Settings)
+app.get('/api/user/data', authenticateToken, (req, res) => {
+    const db = readDb();
+    const userHistory = db.history.filter(h => h.userId === req.user.id);
+    const user = db.users.find(u => u.id === req.user.id);
+    
+    // Sort history by timestamp desc
+    userHistory.sort((a, b) => b.timestamp - a.timestamp);
+
+    res.json({
+        history: userHistory,
+        settings: user?.settings || {}
+    });
+});
+
+// User Data: Sync History (Add Items)
+app.post('/api/user/history', authenticateToken, (req, res) => {
+    const { item } = req.body;
+    const db = readDb();
+    
+    // Add user ID to item
+    const newItem = { ...item, userId: req.user.id };
+    
+    // Check duplication by ID
+    const exists = db.history.some(h => h.id === newItem.id);
+    if (!exists) {
+        db.history.push(newItem);
+        writeDb(db);
+    }
+    
+    res.json({ success: true });
+});
+
+// User Data: Sync Multiple Items (Import/Sync Guest Data)
+app.post('/api/user/sync', authenticateToken, (req, res) => {
+    const { items } = req.body;
+    const db = readDb();
+    let count = 0;
+
+    if (Array.isArray(items)) {
+        items.forEach(item => {
+            if (!db.history.some(h => h.id === item.id)) {
+                db.history.push({ ...item, userId: req.user.id });
+                count++;
+            }
+        });
+        writeDb(db);
+    }
+    res.json({ synced: count });
+});
+
+// User Data: Clear History
+app.delete('/api/user/history', authenticateToken, (req, res) => {
+    const db = readDb();
+    db.history = db.history.filter(h => h.userId !== req.user.id);
+    writeDb(db);
+    res.json({ success: true });
+});
 
 // 1. Image Analysis Endpoint
 app.post('/api/analyze', upload.single('image'), async (req, res) => {

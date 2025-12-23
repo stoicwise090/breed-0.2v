@@ -3,6 +3,7 @@ import { User, Language } from '../types';
 
 interface AuthContextType {
     user: User | null;
+    token: string | null;
     isGuest: boolean;
     login: (identifier: string, password: string) => Promise<boolean>;
     register: (name: string, identifier: string, password: string, language: Language) => Promise<boolean>;
@@ -14,39 +15,37 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
+    const [token, setToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // Load persisted user on mount
+        // Load persisted session on mount
+        const storedToken = localStorage.getItem('kisan-auth-token');
         const storedUser = localStorage.getItem('kisan-auth-user');
-        if (storedUser) {
+        
+        if (storedToken && storedUser) {
+            setToken(storedToken);
             setUser(JSON.parse(storedUser));
         }
         setIsLoading(false);
     }, []);
 
     const login = async (identifier: string, password: string): Promise<boolean> => {
-        // SIMULATED BACKEND DELAY
-        await new Promise(resolve => setTimeout(resolve, 800));
-
-        // Basic validation for demo purposes
-        // In real app, this would hit an API endpoint
         try {
-            const users = JSON.parse(localStorage.getItem('kisan-users-db') || '[]');
-            const foundUser = users.find((u: any) => 
-                (u.email === identifier || u.phone === identifier) && u.password === password
-            );
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ identifier, password })
+            });
 
-            if (foundUser) {
-                const safeUser: User = {
-                    id: foundUser.id,
-                    name: foundUser.name,
-                    email: foundUser.email,
-                    phone: foundUser.phone,
-                    preferredLanguage: foundUser.preferredLanguage
-                };
-                setUser(safeUser);
-                localStorage.setItem('kisan-auth-user', JSON.stringify(safeUser));
+            if (response.ok) {
+                const data = await response.json();
+                const { token, user } = data;
+                
+                setUser(user);
+                setToken(token);
+                localStorage.setItem('kisan-auth-token', token);
+                localStorage.setItem('kisan-auth-user', JSON.stringify(user));
                 return true;
             }
         } catch (e) {
@@ -56,53 +55,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const register = async (name: string, identifier: string, password: string, language: Language): Promise<boolean> => {
-        await new Promise(resolve => setTimeout(resolve, 800));
-
         try {
-            const users = JSON.parse(localStorage.getItem('kisan-users-db') || '[]');
-            
-            // Check existence
-            if (users.some((u: any) => u.email === identifier || u.phone === identifier)) {
-                return false; 
+            const response = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, identifier, password, language })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const { token, user } = data;
+
+                setUser(user);
+                setToken(token);
+                localStorage.setItem('kisan-auth-token', token);
+                localStorage.setItem('kisan-auth-user', JSON.stringify(user));
+                return true;
             }
-
-            const newUser = {
-                id: Date.now().toString(),
-                name,
-                email: identifier.includes('@') ? identifier : undefined,
-                phone: !identifier.includes('@') ? identifier : undefined,
-                password, // In real app, never store plain text password
-                preferredLanguage: language
-            };
-
-            users.push(newUser);
-            localStorage.setItem('kisan-users-db', JSON.stringify(users));
-
-            const safeUser: User = {
-                id: newUser.id,
-                name: newUser.name,
-                email: newUser.email,
-                phone: newUser.phone,
-                preferredLanguage: newUser.preferredLanguage
-            };
-            
-            setUser(safeUser);
-            localStorage.setItem('kisan-auth-user', JSON.stringify(safeUser));
-            return true;
         } catch (e) {
             console.error(e);
-            return false;
         }
+        return false;
     };
 
     const logout = () => {
         setUser(null);
+        setToken(null);
+        localStorage.removeItem('kisan-auth-token');
         localStorage.removeItem('kisan-auth-user');
+        // Clear cached history if any to prevent guest data leak
+        localStorage.removeItem('kisan-cached-history'); 
     };
 
     return (
         <AuthContext.Provider value={{
             user,
+            token,
             isGuest: !user,
             login,
             register,
