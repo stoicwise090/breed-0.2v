@@ -22,6 +22,7 @@ export const translations: Record<Language, Translation> = {
         theme: "Dark Mode",
         language: "Language",
         voice: "Voice",
+        speed: "Speech Speed",
         volume: "Volume",
         fontSize: "Font Size",
         reset: "Reset All",
@@ -82,6 +83,7 @@ export const translations: Record<Language, Translation> = {
         theme: "डार्क मोड",
         language: "भाषा",
         voice: "आवाज़",
+        speed: "बोलने की गति",
         volume: "वॉल्यूम",
         fontSize: "अक्षर का आकार",
         reset: "रीसेट करें",
@@ -119,7 +121,7 @@ export const translations: Record<Language, Translation> = {
         syncDataPrompt: "इस डिवाइस पर पुराना डेटा मिला है। क्या आप इसे अपने खाते में जोड़ना चाहते हैं?",
         syncYes: "हाँ, सिंक करें",
         syncNo: "नहीं, साफ़ करें",
-        authError: "गलत जानकारी या उपयोगकर्ता पहले से मौजूद है।"
+        authError: "गलत जानकारी या उपयोगकर्ता पहले से मौजूद है."
     },
     mr: {
         appName: "किसान मित्र",
@@ -142,6 +144,7 @@ export const translations: Record<Language, Translation> = {
         theme: "डार्क मोड",
         language: "भाषा",
         voice: "आवाज",
+        speed: "बोलण्याचा वेग",
         volume: "आवाज पातळी",
         fontSize: "अक्षराचा आकार",
         reset: "रीसेट करा",

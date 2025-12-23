@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { Moon, RefreshCw, Volume2, Globe, Type, Download, Upload, Key, Mic } from 'lucide-react';
+import { Moon, RefreshCw, Volume2, Globe, Type, Download, Upload, Key, Mic, Gauge } from 'lucide-react';
 import { Language, FontSize } from '../types';
 
 export const SettingsView: React.FC = () => {
@@ -101,6 +101,20 @@ export const SettingsView: React.FC = () => {
                             <option key={voice} value={voice}>{voice}</option>
                         ))}
                     </select>
+                </div>
+
+                {/* Speech Speed */}
+                <div className="p-5 space-y-3">
+                    <div className="flex items-center gap-4">
+                        <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg"><Gauge size={24} /></div>
+                        <span className="font-bold text-lg dark:text-white">{t.speed}</span>
+                    </div>
+                    <div className="flex items-center gap-4 px-2">
+                        <span className="text-sm font-bold text-gray-500 w-8">0.5x</span>
+                        <input type="range" min="0.5" max="2" step="0.1" value={settings.ttsSpeed} onChange={(e) => updateSettings({ ttsSpeed: parseFloat(e.target.value) })} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-primary" />
+                        <span className="text-sm font-bold text-gray-500 w-8 text-right">2.0x</span>
+                    </div>
+                    <div className="text-center font-bold text-primary text-sm bg-primary/10 w-fit mx-auto px-3 py-1 rounded-full">{settings.ttsSpeed.toFixed(1)}x</div>
                 </div>
 
                 {/* Font Size */}

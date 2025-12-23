@@ -22,6 +22,7 @@ const getInitialSettings = (): Settings => ({
     theme: 'light',
     language: detectBrowserLanguage(), // Auto-detect language on first load
     ttsVoice: 'Puck',
+    ttsSpeed: 1.0,
     volume: 1.0,
     fontSize: 'normal',
     apiKey: '' // Default empty

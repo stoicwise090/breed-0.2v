@@ -1,3 +1,4 @@
+
 export type Language = 'en' | 'hi' | 'mr';
 export type AppMode = 'health' | 'facts' | 'management';
 export type FontSize = 'normal' | 'large' | 'extra';
@@ -14,6 +15,7 @@ export interface Settings {
     theme: 'light' | 'dark';
     language: Language;
     ttsVoice: string;
+    ttsSpeed: number;
     volume: number;
     fontSize: FontSize;
     apiKey: string;
@@ -96,6 +98,7 @@ export interface Translation {
     theme: string;
     language: string;
     voice: string;
+    speed: string;
     volume: string;
     fontSize: string;
     reset: string;

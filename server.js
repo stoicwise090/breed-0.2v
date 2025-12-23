@@ -323,8 +323,9 @@ app.post('/api/tts', async (req, res) => {
         const { text, voice, language } = req.body;
         
         // Voice selection logic (Server side)
+        // If voice is provided, use it. Otherwise, default based on language.
         let selectedVoice = voice;
-        if (!selectedVoice || selectedVoice === 'Puck') {
+        if (!selectedVoice) {
              if (language === 'hi' || language === 'mr') selectedVoice = 'Kore';
              else selectedVoice = 'Puck';
         }

@@ -47,6 +47,20 @@ export const useAudioPlayer = () => {
         };
     }, []);
 
+    // Update Speed in real-time
+    useEffect(() => {
+        if (sourceRef.current && sourceRef.current.playbackRate) {
+            sourceRef.current.playbackRate.value = settings.ttsSpeed;
+        }
+    }, [settings.ttsSpeed]);
+
+    // Update Volume in real-time
+    useEffect(() => {
+        if (gainNodeRef.current) {
+            gainNodeRef.current.gain.value = settings.volume;
+        }
+    }, [settings.volume]);
+
     const hardStop = () => {
         isStoppedRef.current = true;
         if (sourceRef.current) {
@@ -91,6 +105,9 @@ export const useAudioPlayer = () => {
 
             const source = ctx.createBufferSource();
             source.buffer = audioBuffer;
+            // Apply speed
+            source.playbackRate.value = settings.ttsSpeed;
+            
             const gainNode = ctx.createGain();
             gainNode.gain.value = settings.volume;
 
