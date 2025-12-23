@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Trash2, Calendar, Stethoscope, BookOpen, Activity, Download, Filter, X } from 'lucide-react';
-import { AnalysisResult, HistoryItem, AppMode } from '../types';
+import { Trash2, Calendar, Stethoscope, BookOpen, Activity, Download, X } from 'lucide-react';
+import { HistoryItem, AppMode } from '../types';
 import { ResultCard } from '../components/ResultCard';
 
 export const HistoryView: React.FC = () => {

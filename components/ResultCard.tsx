@@ -9,7 +9,7 @@ interface ResultCardProps {
     language: Language;
 }
 
-export const ResultCard: React.FC<ResultCardProps> = ({ result, t, language }) => {
+export const ResultCard: React.FC<ResultCardProps> = ({ result, t }) => {
     const { isPlaying, isLoading, playText, stop, repeatCurrentChunk, replayAll, hasAudio } = useAudioPlayer();
 
     // Construct a natural language summary for TTS based on the structured data

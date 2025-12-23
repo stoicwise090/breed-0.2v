@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { Moon, Sun, RefreshCw, Volume2, Globe, User, Type, Download, Upload, Key } from 'lucide-react';
+import { Moon, RefreshCw, Volume2, Globe, Type, Download, Upload, Key } from 'lucide-react';
 import { Language, FontSize } from '../types';
 
 export const SettingsView: React.FC = () => {

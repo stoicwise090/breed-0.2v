@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { 
     Menu, X, Calendar, History, Settings, Home, 
-    Stethoscope, BookOpen, Activity, ChevronRight, 
-    PanelLeftClose, PanelLeftOpen, LogIn, LogOut, User as UserIcon
+    Stethoscope, BookOpen, Activity, 
+    PanelLeftClose, PanelLeftOpen, LogIn, LogOut
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../auth/useAuth';

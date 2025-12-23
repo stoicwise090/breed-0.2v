@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useAuth } from './useAuth';
 import { useApp } from '../context/AppContext';
 import { Loader2, UserPlus, ChevronLeft } from 'lucide-react';
-import { Language } from '../types';
 
 interface RegisterProps {
     onSwitchToLogin: () => void;
