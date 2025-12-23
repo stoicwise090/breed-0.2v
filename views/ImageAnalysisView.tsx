@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Camera, Loader2, Upload } from 'lucide-react';
+import { Camera, Loader2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { analyzeImage } from '../services/geminiService';
 import { AnalysisResult, AppMode } from '../types';
