@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { Moon, RefreshCw, Volume2, Globe, Type, Download, Upload, Key } from 'lucide-react';
+import { Moon, RefreshCw, Volume2, Globe, Type, Download, Upload, Key, Mic } from 'lucide-react';
 import { Language, FontSize } from '../types';
 
 export const SettingsView: React.FC = () => {
@@ -32,6 +32,8 @@ export const SettingsView: React.FC = () => {
         node.click();
         node.remove();
     };
+
+    const voices = ['Puck', 'Charon', 'Kore', 'Fenrir', 'Zephyr'];
 
     return (
         <div className="space-y-6 pb-24">
@@ -81,6 +83,23 @@ export const SettingsView: React.FC = () => {
                         <option value="en">English</option>
                         <option value="hi">हिन्दी</option>
                         <option value="mr">मराठी</option>
+                    </select>
+                </div>
+
+                {/* Voice Selection */}
+                <div className="p-5 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className="p-2 bg-pink-100 text-pink-600 rounded-lg"><Mic size={24} /></div>
+                        <span className="font-bold text-lg dark:text-white">{t.voice}</span>
+                    </div>
+                    <select 
+                        value={settings.ttsVoice} 
+                        onChange={(e) => updateSettings({ ttsVoice: e.target.value })} 
+                        className="bg-gray-100 border-none text-gray-900 text-base rounded-lg focus:ring-primary block p-2.5 dark:bg-gray-700 dark:text-white font-bold min-w-[120px]"
+                    >
+                        {voices.map(voice => (
+                            <option key={voice} value={voice}>{voice}</option>
+                        ))}
                     </select>
                 </div>
 
