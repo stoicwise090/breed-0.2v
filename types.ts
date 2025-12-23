@@ -123,6 +123,9 @@ export interface Translation {
     apiKeyNote: string;
     replay: string;
     repeat: string;
+    // Capture UI
+    clickToCapture: string;
+    secureProcessing: string;
     // Auth Strings
     guest: string;
     login: string;

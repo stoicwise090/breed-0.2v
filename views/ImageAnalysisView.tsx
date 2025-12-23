@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Camera, Loader2 } from 'lucide-react';
+import { Camera, Loader2, Upload } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { analyzeImage } from '../services/geminiService';
 import { AnalysisResult, AppMode } from '../types';
@@ -74,14 +74,22 @@ export const ImageAnalysisView: React.FC<ImageAnalysisViewProps> = ({ mode }) =>
             {/* Main Action Area */}
             {!result ? (
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
-                    <div className="aspect-video bg-gray-100 dark:bg-gray-700 rounded-xl flex flex-col items-center justify-center overflow-hidden relative mb-6 border-2 border-dashed border-gray-300 dark:border-gray-600">
+                    <div 
+                        onClick={() => !loading && fileInputRef.current?.click()}
+                        className="aspect-video bg-gray-50 dark:bg-gray-900 rounded-2xl flex flex-col items-center justify-center overflow-hidden relative mb-6 border-2 border-dashed border-primary/40 dark:border-gray-600 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300 group"
+                    >
                         {image ? (
                             <img src={image} alt="Preview" className="w-full h-full object-contain bg-black" />
                         ) : (
-                            <div className="text-center text-gray-500 p-4" onClick={() => fileInputRef.current?.click()}>
-                                <Camera size={64} className="mx-auto mb-4 text-primary opacity-80" />
-                                <p className="text-lg font-medium">{t.uploadImage}</p>
-                                <p className="text-sm opacity-75 mt-1">Tap to open camera</p>
+                            <div className="text-center p-6 transition-transform transform group-hover:scale-105">
+                                <div className="relative w-20 h-20 mx-auto mb-4">
+                                     <div className="absolute inset-0 bg-primary/10 dark:bg-primary/20 rounded-full animate-pulse"></div>
+                                     <div className="absolute inset-0 flex items-center justify-center text-primary dark:text-green-400">
+                                        <Camera size={40} />
+                                     </div>
+                                </div>
+                                <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">{t.clickToCapture}</h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{t.secureProcessing}</p>
                             </div>
                         )}
                     </div>
@@ -92,19 +100,11 @@ export const ImageAnalysisView: React.FC<ImageAnalysisViewProps> = ({ mode }) =>
                         ref={fileInputRef}
                         onChange={handleFileChange} 
                         className="hidden"
-                        capture="environment"
+                        // Removed 'capture' to allow both Camera and Gallery options on mobile
                     />
 
-                    <div className="grid grid-cols-1 gap-3">
-                        {!image ? (
-                            <button 
-                                onClick={() => fileInputRef.current?.click()}
-                                className="w-full py-4 rounded-xl bg-primary text-white font-bold text-lg shadow-lg hover:bg-green-800 transition flex items-center justify-center gap-3"
-                            >
-                                <Camera size={24} />
-                                {t.takePhoto}
-                            </button>
-                        ) : (
+                    {image && (
+                        <div className="grid grid-cols-1 gap-3 animate-fade-in">
                             <button 
                                 onClick={runAnalysis}
                                 disabled={loading}
@@ -112,8 +112,16 @@ export const ImageAnalysisView: React.FC<ImageAnalysisViewProps> = ({ mode }) =>
                             >
                                 {loading ? <Loader2 className="animate-spin" /> : t.analyzing.replace('...', '')}
                             </button>
-                        )}
-                    </div>
+                            <button 
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={loading}
+                                className="w-full py-3 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700"
+                            >
+                                {t.uploadImage} / Retake
+                            </button>
+                        </div>
+                    )}
+                    
                     {error && <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-lg text-center">{error}</div>}
                 </div>
             ) : (
@@ -121,9 +129,9 @@ export const ImageAnalysisView: React.FC<ImageAnalysisViewProps> = ({ mode }) =>
                     <ResultCard result={result} t={t} language={settings.language} />
                     <button 
                         onClick={reset}
-                        className="w-full mt-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-xl font-bold"
+                        className="w-full mt-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-xl font-bold hover:bg-gray-300 dark:hover:bg-gray-600 transition"
                     >
-                        {t.takePhoto}
+                        Scan Another
                     </button>
                 </div>
             )}
