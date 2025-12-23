@@ -7,8 +7,17 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     define: {
-      // Polyfill process.env.API_KEY for the frontend
-      'process.env.API_KEY': JSON.stringify(env.API_KEY)
+      // We no longer need the API Key in the frontend, but we keep the define to prevent build errors if it was referenced.
+      'process.env.API_KEY': JSON.stringify(env.API_KEY || '')
+    },
+    server: {
+      proxy: {
+        '/api': {
+          target: 'http://localhost:3000',
+          changeOrigin: true,
+          secure: false,
+        }
+      }
     }
   };
 });
