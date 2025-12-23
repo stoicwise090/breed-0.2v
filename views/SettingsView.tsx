@@ -33,7 +33,7 @@ export const SettingsView: React.FC = () => {
         node.remove();
     };
 
-    const voices = ['Puck', 'Charon', 'Kore', 'Fenrir', 'Zephyr'];
+    const voices = ['Puck', 'Charon', 'Kore', 'Fenrir', 'Zephyr', 'Aoede'];
 
     return (
         <div className="space-y-6 pb-24">

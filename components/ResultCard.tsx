@@ -1,7 +1,8 @@
 import React from 'react';
 import { AnalysisResult, Language } from '../types';
-import { AlertTriangle, CheckCircle, Info, Activity, Volume2, StopCircle, Loader2, RotateCcw, Repeat } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Info, Activity, Volume2, StopCircle, Loader2, RotateCcw, Repeat, Gauge } from 'lucide-react';
 import { useAudioPlayer } from '../hooks/useAudioPlayer';
+import { useApp } from '../context/AppContext';
 
 interface ResultCardProps {
     result: AnalysisResult;
@@ -10,6 +11,7 @@ interface ResultCardProps {
 }
 
 export const ResultCard: React.FC<ResultCardProps> = ({ result, t }) => {
+    const { settings, updateSettings } = useApp();
     const { isPlaying, isLoading, playText, stop, repeatCurrentChunk, replayAll, hasAudio } = useAudioPlayer();
 
     // Construct a natural language summary for TTS based on the structured data
@@ -32,6 +34,24 @@ export const ResultCard: React.FC<ResultCardProps> = ({ result, t }) => {
         } else {
             playText(getTTSContent());
         }
+    };
+
+    const toggleSpeed = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        const speeds = [0.75, 1.0, 1.25, 1.5, 2.0];
+        // Find current or closest speed index
+        const currentSpeed = settings.ttsSpeed;
+        const currentSpeedIndex = speeds.indexOf(currentSpeed);
+        
+        let nextSpeed;
+        if (currentSpeedIndex === -1) {
+             // If custom speed from slider, jump to standard cycle
+            nextSpeed = 1.0; 
+        } else {
+            nextSpeed = speeds[(currentSpeedIndex + 1) % speeds.length];
+        }
+        
+        updateSettings({ ttsSpeed: nextSpeed });
     };
 
     const getStatusColor = (status?: string) => {
@@ -65,16 +85,40 @@ export const ResultCard: React.FC<ResultCardProps> = ({ result, t }) => {
                 </div>
                 
                 {/* Audio Controls Toolbar */}
-                <div className="flex items-center gap-2 self-end md:self-center">
-                    {result.confidence && (
-                        <div className="text-xs font-bold px-2 py-1 bg-white/50 rounded-lg backdrop-blur-sm mr-2">
-                            {result.confidence}% {t.confidence}
-                        </div>
-                    )}
+                <div className="flex items-center gap-2 self-end md:self-center bg-white/40 dark:bg-black/20 p-1.5 rounded-full backdrop-blur-sm">
                     
+                    {/* Speed Toggle */}
+                    <button 
+                        onClick={toggleSpeed}
+                        className="flex items-center gap-1 px-2 py-1.5 bg-white/80 dark:bg-gray-600 rounded-full hover:bg-white transition shadow-sm text-gray-700 dark:text-gray-200 text-xs font-bold mr-1 min-w-[50px] justify-center"
+                        title="Toggle Speed"
+                    >
+                        <Gauge className="w-3 h-3" />
+                        {settings.ttsSpeed}x
+                    </button>
+
+                    {/* Play/Stop Button */}
+                    <button 
+                        onClick={handlePlay}
+                        disabled={isLoading}
+                        className={`p-2 rounded-full transition shadow-sm flex items-center justify-center ${
+                            isPlaying 
+                            ? 'bg-red-100 text-red-600 hover:bg-red-200' 
+                            : 'bg-white/90 dark:bg-gray-600 text-blue-600 hover:bg-white'
+                        }`}
+                    >
+                        {isLoading ? (
+                            <Loader2 className="animate-spin w-5 h-5" />
+                        ) : isPlaying ? (
+                            <StopCircle className="w-5 h-5" />
+                        ) : (
+                            <Volume2 className="w-5 h-5" />
+                        )}
+                    </button>
+
                     {/* Secondary Controls (Only show if we have started audio session) */}
                     {(hasAudio || isPlaying) && (
-                        <>
+                        <div className="flex items-center gap-1 pl-1 border-l border-gray-300 dark:border-gray-500">
                             <button 
                                 onClick={replayAll}
                                 disabled={isLoading}
@@ -91,27 +135,8 @@ export const ResultCard: React.FC<ResultCardProps> = ({ result, t }) => {
                             >
                                 <Repeat className="w-4 h-4" />
                             </button>
-                        </>
+                        </div>
                     )}
-
-                    {/* Main Play/Stop Button */}
-                    <button 
-                        onClick={handlePlay}
-                        disabled={isLoading}
-                        className={`p-2 rounded-full transition shadow-sm flex items-center justify-center ${
-                            isPlaying 
-                            ? 'bg-red-100 text-red-600 hover:bg-red-200' 
-                            : 'bg-white/80 dark:bg-gray-600 text-blue-600 hover:bg-white'
-                        }`}
-                    >
-                        {isLoading ? (
-                            <Loader2 className="animate-spin w-5 h-5" />
-                        ) : isPlaying ? (
-                            <StopCircle className="w-5 h-5" />
-                        ) : (
-                            <Volume2 className="w-5 h-5" />
-                        )}
-                    </button>
                 </div>
             </div>
 
